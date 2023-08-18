@@ -18,6 +18,7 @@ class ProductTest extends TestCase
 
         $this->get("/api/products/$product->id")
             ->assertStatus(200)
+            ->assertHeader("X-Powered-By", "Akmal Muhammad Pridianto")
             ->assertJson([
                 "value" => [
                     "name" => $product->name,
@@ -26,6 +27,7 @@ class ProductTest extends TestCase
                         "name" => $product->category->name
                     ],
                     "price" => $product->price,
+                    "is_expensive" => $product->price > 500,
                     "createdAt" => $product->created_at->toJSON(),
                     "updatedAt" => $product->updated_at->toJSON()
                 ]
@@ -36,7 +38,9 @@ class ProductTest extends TestCase
     {
         $this->seed([CategorySeeder::class, ProductSeeder::class]);
 
-        $response = $this->get("/api/products")->assertStatus(200);
+        $response = $this->get("/api/products")
+            ->assertStatus(200)
+            ->assertHeader("X-Powered-By", "Akmal Muhammad Pridianto");
 
         $names = $response->json("data.*.name");
 
@@ -44,7 +48,7 @@ class ProductTest extends TestCase
             assertContains("Product $i of Food", $names);
         }
         for ($i = 0; $i < 5; $i++) {
-            assertContains("Product $i of Gadgetso", $names);
+            assertContains("Product $i of Gadget", $names);
         }
     }
 
@@ -58,5 +62,26 @@ class ProductTest extends TestCase
         self::assertNotNull($response->json("meta"));
         self::assertNotNull($response->json("data"));
     }
+
+    public function testAdditional()
+    {
+        $this->seed([CategorySeeder::class, ProductSeeder::class]);
+
+        $product = Product::query()->first();
+
+        $response = $this->get("/api/products-debug/$product->id")
+            ->assertStatus(200)
+            ->assertJson([
+                "author" => "Akmal Muhammad Pridianto",
+                "data" => [
+                    "id" => $product->id,
+                    "name" => $product->name,
+                    "price" => $product->price
+                ]
+            ]);
+
+        self::assertNotNull($response->json("server_time"));
+    }
+
 
 }
